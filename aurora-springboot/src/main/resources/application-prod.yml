@@ -82,6 +82,7 @@ jwt:
 
 search:
   mode: elasticsearch
+  # mode: mysql
 
 upload:
   mode: oss
