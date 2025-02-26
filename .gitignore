@@ -21,3 +21,4 @@ yarn-error.log*
 target
 test
 application-dev.yml
+application.yml
