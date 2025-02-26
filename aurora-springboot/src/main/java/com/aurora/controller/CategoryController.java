@@ -59,6 +59,4 @@ public class CategoryController {
         categoryService.saveOrUpdateCategory(categoryVO);
         return ResultVO.ok();
     }
-
-
 }

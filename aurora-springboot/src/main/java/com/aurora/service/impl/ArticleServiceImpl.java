@@ -80,22 +80,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @SneakyThrows
     @Override
-    public TopAndFeaturedArticlesDTO listTopAndFeaturedArticles() {
-        List<ArticleCardDTO> articleCardDTOs = articleMapper.listTopAndFeaturedArticles();
-        if (articleCardDTOs.size() == 0) {
-            return new TopAndFeaturedArticlesDTO();
-        } else if (articleCardDTOs.size() > 3) {
-            articleCardDTOs = articleCardDTOs.subList(0, 3);
-        }
-        TopAndFeaturedArticlesDTO topAndFeaturedArticlesDTO = new TopAndFeaturedArticlesDTO();
-        topAndFeaturedArticlesDTO.setTopArticle(articleCardDTOs.get(0));
-        articleCardDTOs.remove(0);
-        topAndFeaturedArticlesDTO.setFeaturedArticles(articleCardDTOs);
-        return topAndFeaturedArticlesDTO;
-    }
-
-    @SneakyThrows
-    @Override
     public PageResultDTO<ArticleCardDTO> listArticles() {
         LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<Article>()
                 .eq(Article::getIsDelete, 0)
@@ -159,6 +143,22 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setPreArticleCard(asyncPreArticle.get());
         article.setNextArticleCard(asyncNextArticle.get());
         return article;
+    }
+
+    @SneakyThrows
+    @Override
+    public TopAndFeaturedArticlesDTO listTopAndFeaturedArticles() {
+        List<ArticleCardDTO> articleCardDTOs = articleMapper.listTopAndFeaturedArticles();
+        if (articleCardDTOs.size() == 0) {
+            return new TopAndFeaturedArticlesDTO();
+        } else if (articleCardDTOs.size() > 3) {
+            articleCardDTOs = articleCardDTOs.subList(0, 3);
+        }
+        TopAndFeaturedArticlesDTO topAndFeaturedArticlesDTO = new TopAndFeaturedArticlesDTO();
+        topAndFeaturedArticlesDTO.setTopArticle(articleCardDTOs.get(0));
+        articleCardDTOs.remove(0);
+        topAndFeaturedArticlesDTO.setFeaturedArticles(articleCardDTOs);
+        return topAndFeaturedArticlesDTO;
     }
 
     @Override

@@ -48,5 +48,4 @@ public class MinioUploadStrategyImpl extends AbstractUploadStrategyImpl {
                 .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
                 .build();
     }
-
 }
