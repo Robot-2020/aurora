@@ -22,7 +22,7 @@ public class Knife4jConfig {
     public Docket createRestApi() {
         return new Docket(DocumentationType.SWAGGER_2)
                 .protocols(Collections.singleton("https"))
-                .host("https://www.linhaojun.top")
+                .host("https://www.diveintodream.cn")
                 .apiInfo(apiInfo())
                 .select()
                 .apis(RequestHandlerSelectors.basePackage("com.aurora.controller"))
@@ -32,10 +32,10 @@ public class Knife4jConfig {
 
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-                .title("aurora文档")
-                .description("aurora")
-                .contact(new Contact("花未眠", "", "1909925152@qq.com"))
-                .termsOfServiceUrl("https://www.linhaojun.top/api")
+                .title("diveintodream文档")
+                .description("diveintodream")
+                .contact(new Contact("Cloud", "", "wuzhiao1119@163.com"))
+                .termsOfServiceUrl("https://www.diveintodream.cn/api")
                 .version("1.0")
                 .build();
     }

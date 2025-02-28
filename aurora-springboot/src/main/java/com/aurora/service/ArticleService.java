@@ -10,13 +10,13 @@ import java.util.List;
 
 public interface ArticleService extends IService<Article> {
 
+    TopAndFeaturedArticlesDTO listTopAndFeaturedArticles();
+
     PageResultDTO<ArticleCardDTO> listArticles();
 
     PageResultDTO<ArticleCardDTO> listArticlesByCategoryId(Integer categoryId);
 
     ArticleDTO getArticleById(Integer articleId);
-
-    TopAndFeaturedArticlesDTO listTopAndFeaturedArticles();
 
     void accessArticle(ArticlePasswordVO articlePasswordVO);
 

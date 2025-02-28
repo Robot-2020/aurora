@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 
 import static com.aurora.enums.StatusCodeEnum.*;
 
-@Data   // @Data 用于自动生成常用的方法（getter、setter、toString、equals、hashCode）。
-@Builder    // @Builder 用于实现构建器模式，简化对象构建的代码。
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @SuppressWarnings("all")

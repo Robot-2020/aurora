@@ -73,7 +73,7 @@ export default {
   bottom: 0;
   right: 0;
   left: 0;
-  background: url(https://static.linhaojun.top/aurora/photos/765664a8a75211296a9cd89671d6d660.png) center center / cover
+  background: url(https://diveintodream.oss-cn-shenzhen.aliyuncs.com/img/IMG_7558.JPG) center center / cover
     no-repeat;
 }
 .login-card {
@@ -81,7 +81,7 @@ export default {
   top: 0;
   bottom: 0;
   right: 0;
-  background: #fff;
+  background: #d5e4fb;
   padding: 170px 60px 180px;
   width: 350px;
 }

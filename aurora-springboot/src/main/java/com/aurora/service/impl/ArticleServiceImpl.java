@@ -1,6 +1,7 @@
 package com.aurora.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.aurora.enums.ArticleStatusEnum;
 import com.aurora.model.dto.*;
 import com.aurora.entity.Article;
 import com.aurora.entity.ArticleTag;
@@ -31,9 +32,11 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -78,13 +81,32 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Autowired
     private SearchStrategyContext searchStrategyContext;
 
+    @Resource
+    private TaskExecutor taskExecutor;
+
+    @SneakyThrows
+    @Override
+    public TopAndFeaturedArticlesDTO listTopAndFeaturedArticles() {
+        List<ArticleCardDTO> articleCardDTOs = articleMapper.listTopAndFeaturedArticles();
+        if (articleCardDTOs.size() == 0) {
+            return new TopAndFeaturedArticlesDTO();
+        } else if (articleCardDTOs.size() > 3) {
+            articleCardDTOs = articleCardDTOs.subList(0, 3);
+        }
+        TopAndFeaturedArticlesDTO topAndFeaturedArticlesDTO = new TopAndFeaturedArticlesDTO();
+        topAndFeaturedArticlesDTO.setTopArticle(articleCardDTOs.get(0));
+        articleCardDTOs.remove(0);
+        topAndFeaturedArticlesDTO.setFeaturedArticles(articleCardDTOs);
+        return topAndFeaturedArticlesDTO;
+    }
+
     @SneakyThrows
     @Override
     public PageResultDTO<ArticleCardDTO> listArticles() {
         LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<Article>()
                 .eq(Article::getIsDelete, 0)
                 .in(Article::getStatus, 1, 2);
-        CompletableFuture<Integer> asyncCount = CompletableFuture.supplyAsync(() -> articleMapper.selectCount(queryWrapper));
+        CompletableFuture<Integer> asyncCount = CompletableFuture.supplyAsync(() -> articleMapper.selectCount(queryWrapper), taskExecutor);
         List<ArticleCardDTO> articles = articleMapper.listArticles(PageUtil.getLimitCurrent(), PageUtil.getSize());
         return new PageResultDTO<>(articles, asyncCount.get());
     }
@@ -105,7 +127,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         if (Objects.isNull(articleForCheck)) {
             return null;
         }
-        if (articleForCheck.getStatus().equals(2)) {
+        if (articleForCheck.getStatus().equals(SECRET.getStatus())) {
             Boolean isAccess;
             try {
                 isAccess = redisService.sIsMember(ARTICLE_ACCESS + UserUtil.getUserDetailsDTO().getId(), articleId);
@@ -143,22 +165,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setPreArticleCard(asyncPreArticle.get());
         article.setNextArticleCard(asyncNextArticle.get());
         return article;
-    }
-
-    @SneakyThrows
-    @Override
-    public TopAndFeaturedArticlesDTO listTopAndFeaturedArticles() {
-        List<ArticleCardDTO> articleCardDTOs = articleMapper.listTopAndFeaturedArticles();
-        if (articleCardDTOs.size() == 0) {
-            return new TopAndFeaturedArticlesDTO();
-        } else if (articleCardDTOs.size() > 3) {
-            articleCardDTOs = articleCardDTOs.subList(0, 3);
-        }
-        TopAndFeaturedArticlesDTO topAndFeaturedArticlesDTO = new TopAndFeaturedArticlesDTO();
-        topAndFeaturedArticlesDTO.setTopArticle(articleCardDTOs.get(0));
-        articleCardDTOs.remove(0);
-        topAndFeaturedArticlesDTO.setFeaturedArticles(articleCardDTOs);
-        return topAndFeaturedArticlesDTO;
     }
 
     @Override

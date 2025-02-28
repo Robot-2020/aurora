@@ -33,6 +33,12 @@ public class ArticleController {
     @Autowired
     private ArticleImportStrategyContext articleImportStrategyContext;
 
+    @ApiOperation("获取置顶和推荐文章")
+    @GetMapping("/articles/topAndFeatured")
+    public ResultVO<TopAndFeaturedArticlesDTO> listTopAndFeaturedArticles() {
+        return ResultVO.ok(articleService.listTopAndFeaturedArticles());
+    }
+
     @ApiOperation("获取所有文章")
     @GetMapping("/articles/all")
     public ResultVO<PageResultDTO<ArticleCardDTO>> listArticles() {
@@ -49,12 +55,6 @@ public class ArticleController {
     @GetMapping("/articles/{articleId}")
     public ResultVO<ArticleDTO> getArticleById(@PathVariable("articleId") Integer articleId) {
         return ResultVO.ok(articleService.getArticleById(articleId));
-    }
-
-    @ApiOperation("获取置顶和推荐文章")
-    @GetMapping("/articles/topAndFeatured")
-    public ResultVO<TopAndFeaturedArticlesDTO> listTopAndFeaturedArticles() {
-        return ResultVO.ok(articleService.listTopAndFeaturedArticles());
     }
 
     @ApiOperation("校验文章访问密码")
