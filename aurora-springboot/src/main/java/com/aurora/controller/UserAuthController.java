@@ -75,7 +75,7 @@ public class UserAuthController {
     }
 
     @ApiOperation(value = "qq登录")
-    @PostMapping("/users/oauth/qq")
+    @PostMapping("/users/oauth/qq") // 这是回调地址，里面带了code，之后会走拿token，获取资源的步骤。前面的请求获取code的步骤，前端实现了。
     public ResultVO<UserInfoDTO> qqLogin(@Valid @RequestBody QQLoginVO qqLoginVO) {
         return ResultVO.ok(userAuthService.qqLogin(qqLoginVO));
     }

@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +45,7 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
     private UserRoleMapper userRoleMapper;
 
     @Autowired
-    private UserDetailServiceImpl userDetailService;
+    private UserDetailServiceImpl userDetailServiceImpl;
 
     @Autowired
     private TokenService tokenService;
@@ -67,8 +68,8 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
         if (userDetailsDTO.getIsDisable().equals(TRUE)) {
             throw new BizException("用户帐号已被锁定");
         }
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetailsDTO, null, userDetailsDTO.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetailsDTO, null, userDetailsDTO.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         UserInfoDTO userInfoDTO = BeanCopyUtil.copyObject(userDetailsDTO, UserInfoDTO.class);
         String token = tokenService.createToken(userDetailsDTO);
         userInfoDTO.setToken(token);
@@ -91,10 +92,11 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
                 .set(UserAuth::getIpAddress, ipAddress)
                 .set(UserAuth::getIpSource, ipSource)
                 .eq(UserAuth::getId, user.getId()));
-        return userDetailService.convertUserDetail(user, request);
+        return userDetailServiceImpl.convertUserDetail(user, request);
     }
 
-    private UserDetailsDTO saveUserDetail(SocialTokenDTO socialToken, String ipAddress, String ipSource) {
+    @Transactional(rollbackFor = Exception.class)
+    public UserDetailsDTO saveUserDetail(SocialTokenDTO socialToken, String ipAddress, String ipSource) {
         SocialUserInfoDTO socialUserInfo = getSocialUserInfo(socialToken);
         UserInfo userInfo = UserInfo.builder()
                 .nickname(socialUserInfo.getNickname())
@@ -116,7 +118,7 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
                 .roleId(RoleEnum.USER.getRoleId())
                 .build();
         userRoleMapper.insert(userRole);
-        return userDetailService.convertUserDetail(userAuth, request);
+        return userDetailServiceImpl.convertUserDetail(userAuth, request);
     }
 
 }
