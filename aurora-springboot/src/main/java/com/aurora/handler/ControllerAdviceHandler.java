@@ -3,20 +3,19 @@ package com.aurora.handler;
 import com.aurora.model.vo.ResultVO;
 import com.aurora.enums.StatusCodeEnum;
 import com.aurora.exception.BizException;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
 import java.util.Objects;
 
-
-@Log4j2
 @RestControllerAdvice
+//@Slf4j
 public class ControllerAdviceHandler {
 
     @ExceptionHandler(value = BizException.class)
     public ResultVO<?> errorHandler(BizException e) {
+//        log.error("BizException, " + e.getMessage());
         return ResultVO.fail(e.getCode(), e.getMessage());
     }
 
