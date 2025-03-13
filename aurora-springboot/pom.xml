@@ -157,6 +157,13 @@
 <!--            <artifactId>slf4j-log4j12</artifactId>-->
 <!--            <version>1.7.25</version>-->
 <!--        </dependency>-->
+
+        <!-- swagger -->
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-boot-starter</artifactId>
+            <version>3.0.0</version>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
