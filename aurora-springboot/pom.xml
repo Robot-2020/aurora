@@ -161,8 +161,15 @@
         <!-- swagger -->
         <dependency>
             <groupId>io.springfox</groupId>
-            <artifactId>springfox-boot-starter</artifactId>
-            <version>3.0.0</version>
+            <artifactId>springfox-swagger2</artifactId>
+            <!-- 注意：这里使用的是2.9.2版本 用的人比较多 -->
+            <version>2.9.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <!-- 与swagger2版本保持一致 -->
+            <version>2.9.2</version>
         </dependency>
     </dependencies>
 
