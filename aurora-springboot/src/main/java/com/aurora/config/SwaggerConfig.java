@@ -20,13 +20,9 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableSwagger2
 public class SwaggerConfig {
 
-    @Value("${swagger.enabled}")
-    private Boolean swaggerShow;
-
     @Bean
     public Docket docket() {
         return new Docket(DocumentationType.SWAGGER_2)
-                .enable(swaggerShow)
                 .select()
                 .apis(RequestHandlerSelectors.basePackage("com.aurora.controller")) //通过包路径来指定哪些Controller中的API需要被Swagger扫描并生成文档。
 
