@@ -69,11 +69,11 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     private static final List<Integer> types = new ArrayList<>();
 
-    @PostConstruct
-    public void init() {
+    @PostConstruct   // 该方法会在类的依赖注入完成后、对象初始化完成之前自动执行。它主要用于一些初始化的操作，比如资源的获取、对象的状态设置等。
+    public void init() {	// 方法必须是 public 的、无参数的、返回类型为 void 的方法。
         CommentTypeEnum[] values = CommentTypeEnum.values();
         for (CommentTypeEnum value : values) {
-            types.add(value.getType());
+            types.add(value.getType());	// 将 CommentTypeEnum 中所有的评论类型的 type 值添加到 types 列表中，目的是用来校验评论类型是否合法。
         }
     }
 
@@ -81,8 +81,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     public void saveComment(CommentVO commentVO) {
         checkCommentVO(commentVO);
         WebsiteConfigDTO websiteConfig = auroraInfoService.getWebsiteConfig();
-        Integer isCommentReview = websiteConfig.getIsCommentReview();
-        commentVO.setCommentContent(HTMLUtil.filter(commentVO.getCommentContent()));
+        Integer isCommentReview = websiteConfig.getIsCommentReview();	// 用来判断网站配置中评论是否需要审核的配置。
+        commentVO.setCommentContent(HTMLUtil.filter(commentVO.getCommentContent()));	// 对评论内容进行 HTML 过滤，防止恶意注入。
         Comment comment = Comment.builder()
                 .userId(UserUtil.getUserDetailsDTO().getUserInfoId())
                 .replyUserId(commentVO.getReplyUserId())
@@ -92,10 +92,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 .type(commentVO.getType())
                 .isReview(isCommentReview == TRUE ? FALSE : TRUE)
                 .build();
-        commentMapper.insert(comment);
+        commentMapper.insert(comment);	// 将评论插入数据库
         String fromNickname = UserUtil.getUserDetailsDTO().getNickname();
         if (websiteConfig.getIsEmailNotice().equals(TRUE)) {
-            CompletableFuture.runAsync(() -> notice(comment, fromNickname));
+            CompletableFuture.runAsync(() -> notice(comment, fromNickname));	// 异步发送邮件通知给回复的用户
         }
     }
 
@@ -104,11 +104,12 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         Integer commentCount = commentMapper.selectCount(new LambdaQueryWrapper<Comment>()
                 .eq(Objects.nonNull(commentVO.getTopicId()), Comment::getTopicId, commentVO.getTopicId())
                 .eq(Comment::getType, commentVO.getType())
-                .isNull(Comment::getParentId)
+                .isNull(Comment::getParentId)	// parentId == null 即初始评论
                 .eq(Comment::getIsReview, TRUE));
         if (commentCount == 0) {
             return new PageResultDTO<>();
         }
+        // 分页查询查询评论列表（SQL指定了parentId is null）
         List<CommentDTO> commentDTOs = commentMapper.listComments(PageUtil.getLimitCurrent(), PageUtil.getSize(), commentVO);
         if (CollectionUtils.isEmpty(commentDTOs)) {
             return new PageResultDTO<>();
@@ -116,7 +117,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         List<Integer> commentIds = commentDTOs.stream()
                 .map(CommentDTO::getId)
                 .collect(Collectors.toList());
+        // 根据起始评论的id 找到每个 id下面的回复（SQL指定了回复评论的parent_id 在 commentIds中）
         List<ReplyDTO> replyDTOS = commentMapper.listReplies(commentIds);
+        // 将评论 与 回复的评论分组、合并
         Map<Integer, List<ReplyDTO>> replyMap = replyDTOS.stream()
                 .collect(Collectors.groupingBy(ReplyDTO::getParentId));
         commentDTOs.forEach(item -> item.setReplyDTOs(replyMap.get(item.getId())));
@@ -135,7 +138,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     @SneakyThrows
     @Override
-    public PageResultDTO<CommentAdminDTO> listCommentsAdmin(ConditionVO conditionVO) {
+    public PageResultDTO<CommentAdminDTO> listCommentsAdmin(ConditionVO conditionVO) {	// 后台管理系统中查询评论列表（数量 + 分页）
         CompletableFuture<Integer> asyncCount = CompletableFuture.supplyAsync(() -> commentMapper.countComments(conditionVO));
         List<CommentAdminDTO> commentBackDTOList = commentMapper.listCommentsAdmin(PageUtil.getLimitCurrent(), PageUtil.getSize(), conditionVO);
         return new PageResultDTO<>(commentBackDTOList, asyncCount.get());
@@ -148,7 +151,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                         .isReview(reviewVO.getIsReview())
                         .build())
                 .collect(Collectors.toList());
-        this.updateBatchById(comments);
+        this.updateBatchById(comments);	// 批量更新评论审核状态
     }
 
     public void checkCommentVO(CommentVO commentVO) {
@@ -208,6 +211,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     }
 
     private void notice(Comment comment, String fromNickname) {
+        // 自我回复的过滤
         if (comment.getUserId().equals(comment.getReplyUserId())) {
             if (Objects.nonNull(comment.getParentId())) {
                 Comment parentComment = commentMapper.selectById(comment.getParentId());
@@ -216,9 +220,11 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 }
             }
         }
+        // 博主自我评论的过滤
         if (comment.getUserId().equals(BLOGGER_ID) && Objects.isNull(comment.getParentId())) {
             return;
         }
+        // 检查是否需要发送通知给被回复的用户（即父评论的作者）
         if (Objects.nonNull(comment.getParentId())) {
             Comment parentComment = commentMapper.selectById(comment.getParentId());
             if (!comment.getReplyUserId().equals(parentComment.getUserId())
@@ -239,10 +245,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                         .build();
                 rabbitTemplate.convertAndSend(EMAIL_EXCHANGE, "*", new Message(JSON.toJSONBytes(emailDTO), new MessageProperties()));
             }
+            // 父评论的作者是当前评论者的情况下，跳过通知
             if (comment.getUserId().equals(parentComment.getUserId())) {
                 return;
             }
         }
+        // 默认情况下，通知将发送给博主（BLOGGER_ID）。
+        // 如果评论是对某个用户的回复（comment.getReplyUserId() 存在），则通知该被回复的用户。
+        // 如果评论是对文章或话题的评论，则通过 articleMapper 或 talkMapper 获取文章或话题的作者 ID。
         String title;
         Integer userId = BLOGGER_ID;
         String topicId = Objects.nonNull(comment.getTopicId()) ? comment.getTopicId().toString() : "";
@@ -259,6 +269,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                     break;
             }
         }
+        // 获取邮件标题并发送邮件。
         if (Objects.requireNonNull(getCommentEnum(comment.getType())).equals(ARTICLE)) {
             title = articleMapper.selectById(comment.getTopicId()).getArticleTitle();
         } else {
@@ -324,5 +335,4 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         emailDTO.setCommentMap(map);
         return emailDTO;
     }
-
 }

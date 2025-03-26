@@ -71,6 +71,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
 
     @Override
     public String updateUserAvatar(MultipartFile file) {
+        // 先点击上传的按钮，调用users/avatar -> updateUserAvatar的请求上传图片，上传到OSS后返回文件的路径。
+        // 数据库只保存文件的路径即可，如https://diveintodream.oss.aliyuncs.com/img/image-20250302171258495.png)。
         String avatar = uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.AVATAR.getPath());
         UserInfo userInfo = UserInfo.builder()
                 .id(UserUtil.getUserDetailsDTO().getUserInfoId())
@@ -83,6 +85,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void saveUserEmail(EmailVO emailVO) {
+        // 验证码用Redis
         if (Objects.isNull(redisService.get(USER_CODE_KEY + emailVO.getEmail()))) {
             throw new BizException("验证码错误");
         }
@@ -112,13 +115,13 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void updateUserRole(UserRoleVO userRoleVO) {
+    public void updateUserRole(UserRoleVO userRoleVO) {	// 用户所属的角色决定了该用户拥有的资源权限
         UserInfo userInfo = UserInfo.builder()
                 .id(userRoleVO.getUserInfoId())
                 .nickname(userRoleVO.getNickname())
                 .build();
         userInfoMapper.updateById(userInfo);
-        userRoleService.remove(new LambdaQueryWrapper<UserRole>()
+        userRoleService.remove(new LambdaQueryWrapper<UserRole>()	// 删除用户角色关联表中该用户所在的所有角色中的信息
                 .eq(UserRole::getUserId, userRoleVO.getUserInfoId()));
         List<UserRole> userRoleList = userRoleVO.getRoleIds().stream()
                 .map(roleId -> UserRole.builder()
@@ -126,7 +129,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
                         .userId(userRoleVO.getUserInfoId())
                         .build())
                 .collect(Collectors.toList());
-        userRoleService.saveBatch(userRoleList);
+        userRoleService.saveBatch(userRoleList);	// 批量保存该用户新拥有的角色关系
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -162,6 +165,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
 
     @Override
     public void removeOnlineUser(Integer userInfoId) {
+        // token 删除，存在redis当中
         Integer userId = userAuthMapper.selectOne(new LambdaQueryWrapper<UserAuth>().eq(UserAuth::getUserInfoId, userInfoId)).getId();
         tokenService.delLoginUser(userId);
     }
@@ -171,5 +175,4 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         UserInfo userInfo = userInfoMapper.selectById(id);
         return BeanCopyUtil.copyObject(userInfo, UserInfoDTO.class);
     }
-
 }

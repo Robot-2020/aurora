@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 
 import static com.aurora.enums.TalkStatusEnum.PUBLIC;
 
-
 @Service
 public class TalkServiceImpl extends ServiceImpl<TalkMapper, Talk> implements TalkService {
 
@@ -43,7 +42,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkMapper, Talk> implements Ta
     @Override
     public PageResultDTO<TalkDTO> listTalks() {
         Integer count = talkMapper.selectCount((new LambdaQueryWrapper<Talk>()
-                .eq(Talk::getStatus, PUBLIC.getStatus())));
+                .eq(Talk::getStatus, PUBLIC.getStatus())));	// PULIC.status = 1
         if (count == 0) {
             return new PageResultDTO<>();
         }
@@ -51,12 +50,14 @@ public class TalkServiceImpl extends ServiceImpl<TalkMapper, Talk> implements Ta
         List<Integer> talkIds = talkDTOs.stream()
                 .map(TalkDTO::getId)
                 .collect(Collectors.toList());
+        // 需要注意的是，每个说说都要查出来下面的评论数量。评论类型 topic_id 是说说类型
         Map<Integer, Integer> commentCountMap = commentMapper.listCommentCountByTypeAndTopicIds(CommentTypeEnum.TALK.getType(), talkIds)
                 .stream()
                 .collect(Collectors.toMap(CommentCountDTO::getId, CommentCountDTO::getCommentCount));
         talkDTOs.forEach(item -> {
             item.setCommentCount(commentCountMap.get(item.getId()));
             if (Objects.nonNull(item.getImages())) {
+                // imgs 字段会存储图片 URL 列表，例如：["https://example.com/img1.jpg", "https://example.com/img2.jpg"]
                 item.setImgs(CommonUtil.castList(JSON.parseObject(item.getImages(), List.class), String.class));
             }
         });
@@ -115,6 +116,4 @@ public class TalkServiceImpl extends ServiceImpl<TalkMapper, Talk> implements Ta
         }
         return talkBackDTO;
     }
-
 }
-

@@ -18,7 +18,7 @@ export default defineComponent({
     const appStore = useAppStore()
     return {
       url: toRefs(props).url,
-      default: computed(() => appStore.websiteConfig.touristAvatar || 'https://static.linhaojun.top/aurora/config/52a81cd2772167b645569342e81ce312.jpg')
+      default: computed(() => appStore.websiteConfig.touristAvatar || 'https://diveintodream.oss-cn-shenzhen.aliyuncs.com/img/7F89B6D0AD45405B8F16374D5D86AE52.jpg')
     }
   }
 })

@@ -33,12 +33,6 @@ public class ArticleController {
     @Autowired
     private ArticleImportStrategyContext articleImportStrategyContext;
 
-    @ApiOperation("获取置顶和推荐文章")
-    @GetMapping("/articles/topAndFeatured")
-    public ResultVO<TopAndFeaturedArticlesDTO> listTopAndFeaturedArticles() {
-        return ResultVO.ok(articleService.listTopAndFeaturedArticles());
-    }
-
     @ApiOperation("获取所有文章")
     @GetMapping("/articles/all")
     public ResultVO<PageResultDTO<ArticleCardDTO>> listArticles() {
@@ -49,6 +43,12 @@ public class ArticleController {
     @GetMapping("/articles/categoryId")
     public ResultVO<PageResultDTO<ArticleCardDTO>> getArticlesByCategoryId(@RequestParam Integer categoryId) {
         return ResultVO.ok(articleService.listArticlesByCategoryId(categoryId));
+    }
+
+    @ApiOperation("获取置顶和推荐文章")
+    @GetMapping("/articles/topAndFeatured")
+    public ResultVO<TopAndFeaturedArticlesDTO> listTopAndFeaturedArticles() {
+        return ResultVO.ok(articleService.listTopAndFeaturedArticles());
     }
 
     @ApiOperation("根据id获取文章")
@@ -99,7 +99,7 @@ public class ArticleController {
     }
 
     @ApiOperation("删除或者恢复文章")
-    @PutMapping("/admin/articles")
+    @PutMapping("/admin/articles")  // 路径和保存修改文章的路径相同，但是方法类型不同。
     public ResultVO<?> updateArticleDelete(@Valid @RequestBody DeleteVO deleteVO) {
         articleService.updateArticleDelete(deleteVO);
         return ResultVO.ok();
@@ -114,14 +114,14 @@ public class ArticleController {
     }
 
     @OptLog(optType = UPLOAD)
-    @ApiOperation("上传文章图片")
+    @ApiOperation("上传文章图片")     // 具体实现见第六章：策略模式上传文件
     @ApiImplicitParam(name = "file", value = "文章图片", required = true, dataType = "MultipartFile")
     @PostMapping("/admin/articles/images")
     public ResultVO<String> saveArticleImages(MultipartFile file) {
         return ResultVO.ok(uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.ARTICLE.getPath()));
     }
 
-    @ApiOperation("根据id查看后台文章")
+    @ApiOperation("根据id查看后台文章")     // 编辑的时候调用
     @ApiImplicitParam(name = "articleId", value = "文章id", required = true, dataType = "Integer")
     @GetMapping("/admin/articles/{articleId}")
     public ResultVO<ArticleAdminViewDTO> getArticleBackById(@PathVariable("articleId") Integer articleId) {
@@ -145,7 +145,7 @@ public class ArticleController {
     }
 
     @ApiOperation(value = "搜索文章")
-    @GetMapping("/articles/search")
+    @GetMapping("/articles/search")	// 具体实现见第六章：策略模式实现文章搜索
     public ResultVO<List<ArticleSearchDTO>> listArticlesBySearch(ConditionVO condition) {
         return ResultVO.ok(articleService.listArticlesBySearch(condition));
     }

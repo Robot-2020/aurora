@@ -32,9 +32,12 @@ export const useAppStore = defineStore('appStore', {
           color_2: '#5433ff',
           color_3: '#ff0099'
         },
-        header_gradient_css: 'linear-gradient(130deg, #24c6dc, #5433ff 41.07%, #ff0099 76.05%)',
+        // header_gradient_css: 'linear-gradient(130deg, #24c6dc, #5433ff 41.07%, #ff0099 76.05%)',
+        // header_gradient_css: 'linear-gradient(90deg, rgba(133,205,255,1) 17%, rgba(235,203,206,1) 56%, rgba(255,160,201,1) 91%)',
+        header_gradient_css: 'radial-gradient(circle, rgba(255,192,234,1) 20%, rgba(252,192,255,1) 27%, rgba(59,163,240,1) 57%, rgba(218,238,255,1) 100%)',
         background_gradient_style: {
-          background: 'linear-gradient(130deg, #24c6dc, #5433ff 41.07%, #ff0099 76.05%)',
+          // background: 'linear-gradient(130deg, #24c6dc, #5433ff 41.07%, #ff0099 76.05%)',
+          background: 'radial-gradient(circle, rgba(255,192,234,1) 20%, rgba(252,192,255,1) 27%, rgba(59,163,240,1) 57%, rgba(218,238,255,1) 100%)',
           '-webkit-background-clip': 'text',
           '-webkit-text-fill-color': 'transparent',
           '-webkit-box-decoration-break': 'clone',

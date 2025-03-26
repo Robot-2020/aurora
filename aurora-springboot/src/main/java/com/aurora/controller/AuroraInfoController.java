@@ -34,27 +34,27 @@ public class AuroraInfoController {
     private UploadStrategyContext uploadStrategyContext;
 
     @ApiOperation(value = "上报访客信息")
-    @PostMapping("/report")
+    @PostMapping("/report")	// 这个是为了后台统计数据用的方法，前端每跳转一个新的页面就会调用这个方法。
     public ResultVO<?> report() {
         auroraInfoService.report();
         return ResultVO.ok();
     }
 
     @ApiOperation(value = "获取系统信息")
-    @GetMapping("/")
+    @GetMapping("/")	// 前台获取系统信息的方法，主要是文章数、分类数、标签数等信息。
     public ResultVO<AuroraHomeInfoDTO> getBlogHomeInfo() {
         return ResultVO.ok(auroraInfoService.getAuroraHomeInfo());
     }
 
     @ApiOperation(value = "获取系统后台信息")
-    @GetMapping("/admin")
+    @GetMapping("/admin")	// 后台获取系统信息的方法。
     public ResultVO<AuroraAdminInfoDTO> getBlogBackInfo() {
         return ResultVO.ok(auroraInfoService.getAuroraAdminInfo());
     }
 
     @OptLog(optType = UPDATE)
     @ApiOperation(value = "更新网站配置")
-    @PutMapping("/admin/website/config")
+    @PutMapping("/admin/website/config")	// 更新网站配置的方法，这个方法参数非常多。
     public ResultVO<?> updateWebsiteConfig(@Valid @RequestBody WebsiteConfigVO websiteConfigVO) {
         auroraInfoService.updateWebsiteConfig(websiteConfigVO);
         return ResultVO.ok();
@@ -87,5 +87,4 @@ public class AuroraInfoController {
     public ResultVO<String> savePhotoAlbumCover(MultipartFile file) {
         return ResultVO.ok(uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.CONFIG.getPath()));
     }
-
 }

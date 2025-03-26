@@ -39,6 +39,7 @@ public class PhotoAlbumController {
     @ApiImplicitParam(name = "file", value = "相册封面", required = true, dataType = "MultipartFile")
     @PostMapping("/admin/photos/albums/upload")
     public ResultVO<String> savePhotoAlbumCover(MultipartFile file) {
+        // 其实很多时候文件的上传是两个请求，我们一般先调用上传的接口上传好文件，然后返回可以访问到该文件的路径作为参数之一，之后再发起新建 / 确度请求的操作，文件的路径也保存在了这个操作所创建的对象之中。
         return ResultVO.ok(uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.PHOTO.getPath()));
     }
 
