@@ -3,9 +3,9 @@
     <div v-show="showDia" id="bot-container">
       <div id="Aurora-Dia--body" :style="cssVariables">
         <div id="Aurora-Dia--tips-wrapper">
-          <div id="Aurora-Dia--tips" class="Aurora-Dia--tips">早上好呀～</div>
+          <div id="Aurora-Dia--tips" class="Aurora-Dia--tips">{{ currentTip }}</div>
         </div>
-        <div id="Aurora-Dia" class="Aurora-Dia">
+        <div id="Aurora-Dia" class="Aurora-Dia" @click="openDialog">
           <div id="Aurora-Dia--eyes" class="Aurora-Dia--eyes">
             <div id="Aurora-Dia--left-eye" class="Aurora-Dia--eye left"></div>
             <div id="Aurora-Dia--right-eye" class="Aurora-Dia--eye right"></div>
@@ -15,13 +15,61 @@
       </div>
     </div>
   </transition>
+
+  <el-dialog v-model="dialogVisible" title="Dia AI 助手" width="500px">
+    <div class="chat-dialog">
+      <!-- 欢迎语区域 -->
+      <div v-if="messages.length === 0" class="welcome-section">
+        <div class="welcome-message">
+          <h3>👋 你好！我是你的AI助手 Dia</h3>
+          <p>我可以帮你解答各种问题，有什么想了解的吗？</p>
+        </div>
+      </div>
+      
+      <!-- 聊天消息区域 -->
+      <div class="messages-container" ref="messagesContainer">
+        <div v-for="(message, index) in messages" :key="index" 
+             :class="['message', message.type]">
+          <div class="message-content">
+            <div v-if="message.type === 'bot' && message.isStreaming" class="streaming-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <div v-else-if="message.type === 'bot'" class="message-text" v-html="formatMessage(message.text)"></div>
+            <div v-else class="message-text">{{ message.text }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 输入区域 -->
+      <div class="input-section">
+        <el-input
+          v-model="userInput"
+          type="textarea"
+          :rows="2"
+          placeholder="请输入您的问题..."
+          @keydown.enter.prevent="handleSendMessage"
+          :disabled="isLoading"
+        ></el-input>
+        <el-button 
+          type="primary" 
+          @click="handleSendMessage" 
+          :loading="isLoading"
+          class="send-button"
+        >
+          发送
+        </el-button>
+      </div>
+    </div>
+  </el-dialog>
 </template>
 
 <script lang="ts">
 // @ts-nocheck
-import { computed, defineComponent, onMounted, ref } from 'vue'
+import { computed, defineComponent, onMounted, ref, nextTick } from 'vue'
 import { useDiaStore } from '@/stores/dia'
 import { useAppStore } from '@/stores/app'
+import { ElMessage } from 'element-plus'
+import api from '@/api/api'
 
 export default defineComponent({
   name: 'Dia',
@@ -29,9 +77,16 @@ export default defineComponent({
     const diaStore = useDiaStore()
     const appStore = useAppStore()
     const showDia = ref(false)
+    const dialogVisible = ref(false)
+    const userInput = ref('')
+    const isLoading = ref(false)
+    const messages = ref([] as Array<{type: string, text: string, isStreaming?: boolean}>)
+    const messagesContainer = ref<HTMLElement>()
+    
     onMounted(() => {
       initializeBot()
     })
+
     const initializeBot = () => {
       if (!appStore.aurora_bot_enable) return
       diaStore.initializeBot({
@@ -42,6 +97,112 @@ export default defineComponent({
         showDia.value = true
       }, 1000)
     }
+
+    const openDialog = () => {
+      dialogVisible.value = true
+      // 清空之前的对话
+      messages.value = []
+    }
+
+    const handleSendMessage = async () => {
+      if (!userInput.value.trim() || isLoading.value) return
+
+      const question = userInput.value.trim()
+      userInput.value = ''
+      
+      // 添加用户消息
+      messages.value.push({
+        type: 'user',
+        text: question
+      })
+      
+      // 添加机器人消息（流式输出）
+      const botMessageIndex = messages.value.push({
+        type: 'bot',
+        text: '',
+        isStreaming: true
+      }) - 1
+      
+      isLoading.value = true
+      
+      try {
+        // 调用后端API - 这里是模拟调用，您需要根据实际后端接口调整
+        await simulateStreamingResponse(botMessageIndex, question)
+      } catch (error) {
+        console.error('对话失败:', error)
+        messages.value[botMessageIndex] = {
+          type: 'bot',
+          text: '抱歉，我目前无法处理您的请求。请稍后重试。'
+        }
+        ElMessage({
+          message: '对话请求失败',
+          type: 'error',
+          duration: 3000
+        })
+      } finally {
+        isLoading.value = false
+        scrollToBottom()
+      }
+    }
+
+    const simulateStreamingResponse = async (messageIndex: number, question: string) => {
+      // 模拟流式输出效果
+      const responses = {
+        '你好': '你好！我是Dia，很高兴为你服务。有什么我可以帮助你的吗？',
+        '博客': '这是一个基于Vue的现代化博客系统，包含前台博客展示和后台管理系统。',
+        '帮助': '我可以帮你解答关于这个博客系统的各种问题，或者聊天交流。',
+        '技术': '这个项目使用了Vue 3、TypeScript、Element Plus等现代前端技术栈。',
+        '默认': '这个问题很有趣！虽然我现在还不能提供具体的答案，但您可以尝试查阅相关文档或在博客中进行搜索。'
+      }
+      
+      const response = responses[question] || responses['默认']
+      const chars = response.split('')
+      let currentText = ''
+      
+      return new Promise<void>((resolve) => {
+        const interval = setInterval(() => {
+          if (chars.length === 0) {
+            clearInterval(interval)
+            messages.value[messageIndex] = {
+              type: 'bot',
+              text: currentText
+            }
+            resolve()
+            return
+          }
+          
+          currentText += chars.shift()
+          messages.value[messageIndex] = {
+            type: 'bot',
+            text: currentText,
+            isStreaming: chars.length > 0
+          }
+          
+          scrollToBottom()
+        }, 50)
+      })
+    }
+
+    const formatMessage = (text: string) => {
+      // 简单的消息格式化，支持换行
+      return text.replace(/\n/g, '<br>')
+    }
+
+    const scrollToBottom = () => {
+      nextTick(() => {
+        if (messagesContainer.value) {
+          messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+        }
+      })
+    }
+
+    const currentTip = computed(() => {
+      const hour = new Date().getHours()
+      if (hour >= 5 && hour < 12) return '早上好！点击我聊天～'
+      if (hour >= 12 && hour < 18) return '下午好！有什么问题吗？'
+      return '晚上好！需要帮助吗？'
+    })
+
     return {
       cssVariables: computed(() => {
         return `
@@ -54,7 +215,17 @@ export default defineComponent({
           --aurora-dia--platform-light: ${appStore.themeConfig.gradient.color_3};
         `
       }),
-      showDia
+      showDia,
+      dialogVisible,
+      userInput,
+      isLoading,
+      messages,
+      messagesContainer,
+      currentTip,
+      openDialog,
+      handleSendMessage,
+      formatMessage,
+      scrollToBottom
     }
   }
 })
@@ -384,5 +555,144 @@ export default defineComponent({
   color: #7aa2f7;
   background-color: #7aa2f7;
   background-image: var(--strong-gradient);
+}
+
+/* 聊天对话框样式 */
+.chat-dialog {
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.welcome-section {
+  text-align: center;
+  padding: 20px;
+}
+
+.welcome-message h3 {
+  margin: 0 0 10px 0;
+  color: var(--text-accent);
+}
+
+.welcome-message p {
+  margin: 0;
+  color: var(--text-normal);
+  opacity: 0.8;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  margin: 20px 0;
+  max-height: 250px;
+  padding: 10px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+}
+
+.message {
+  margin-bottom: 15px;
+  display: flex;
+}
+
+.message.user {
+  justify-content: flex-end;
+}
+
+.message.user .message-content {
+  background: var(--main-gradient);
+  color: white;
+  border-radius: 15px 15px 0 15px;
+}
+
+.message.bot .message-content {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  border: 1px solid var(--background-secondary);
+  border-radius: 15px 15px 15px 0;
+}
+
+.message-content {
+  max-width: 80%;
+  padding: 10px 15px;
+  word-wrap: break-word;
+}
+
+.message-text {
+  line-height: 1.4;
+}
+
+.streaming-dots {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.streaming-dots span {
+  height: 8px;
+  width: 8px;
+  margin: 0 2px;
+  background-color: var(--text-normal);
+  border-radius: 50%;
+  display: inline-block;
+  animation: bounce 1.5s infinite ease-in-out;
+}
+
+.streaming-dots span:nth-child(1) {
+  animation-delay: -0.3s;
+}
+
+.streaming-dots span:nth-child(2) {
+  animation-delay: -0.15s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.input-section {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.input-section :deep(.el-textarea) {
+  flex: 1;
+}
+
+.input-section :deep(.el-textarea .el-textarea__inner) {
+  background: var(--background-secondary);
+  border-color: var(--border-color);
+  color: var(--text-normal);
+  resize: none;
+}
+
+.send-button {
+  height: 56px;
+}
+
+:deep(.el-dialog) {
+  background: var(--background-primary) !important;
+  border-radius: 12px;
+  
+  .el-dialog__header {
+    border-bottom: 1px solid var(--background-secondary);
+    
+    .el-dialog__title {
+      color: var(--text-accent);
+    }
+  }
+  
+  .el-dialog__body {
+    background: var(--background-primary) !important;
+    padding: 20px;
+  }
 }
 </style>
